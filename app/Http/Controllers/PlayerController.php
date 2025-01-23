@@ -11,18 +11,27 @@ use App\Http\Requests\PlayerRequest;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use App\Models\PlayerSkill;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PlayerController extends Controller
 {
     public function index()
     {
-        return response('Failed', 500);
+        $players = Player::all();
+
+        $data = PlayerResource::collection($players);
+
+        return response()->json($data, 200);
     }
 
-    public function show()
+    public function show(Request $request, int $id)
     {
-        return response('Failed', 500);
+        $player = Player::findOrFail($id);
+
+        $data = new PlayerResource($player);
+
+        return response()->json($data, 200);
     }
 
     public function store(PlayerRequest $request)
@@ -61,16 +70,57 @@ class PlayerController extends Controller
 
             return response()->json(['message' => 'An error occurred: '.$e->getMessage()], 500);
         }
-
     }
 
-    public function update()
+    public function update(PlayerRequest $request, int $id)
     {
-        return response('Failed', 500);
+        try {
+            DB::beginTransaction();
+
+            $validated = $request->validated();
+
+            $player = Player::findOrFail($id);
+            $player->name = $validated['name'];
+            $player->position = $validated['position'];
+            $player->save();
+
+            PlayerSkill::where('player_id', $player->id)->delete();
+
+            $data = collect($validated['playerSkills'])->map(function ($item) use ($player) {
+                $arrayToMerge = [
+                    'player_id' => $player->id,
+                ];
+
+                return array_merge($item, $arrayToMerge);
+
+            })->toArray();
+
+            PlayerSkill::insert($data);
+
+            DB::commit();
+
+            $player = Player::find($player->id); // reload with full associated objects.
+            $playerResource = new PlayerResource($player);
+
+            return response()->json($playerResource, 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json(['message' => 'An error occurred: '.$e->getMessage()], 500);
+        }
     }
 
-    public function destroy()
+    public function destroy(Request $request, int $id)
     {
-        return response('Failed', 500);
+        $token = $request->headers->get('authorization');
+
+        if ($token != 'Bearer SkFabTZibXE1aE14ckpQUUxHc2dnQ2RzdlFRTTM2NFE2cGI4d3RQNjZmdEFITmdBQkE=') {
+            return abort(401);
+        }
+
+        $player = Player::findOrFail($id);
+        $player->delete();
+
+        return response()->json(['id' => $id, 'deleted' => true], 200);
     }
 }
