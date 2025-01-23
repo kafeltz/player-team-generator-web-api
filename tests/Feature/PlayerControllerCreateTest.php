@@ -12,8 +12,7 @@ use App\Enums\PlayerSkill;
 
 class PlayerControllerCreateTest extends PlayerControllerBaseTest
 {
-    // test if App\Http\Requests\PlayerRequest is correctly implemented
-    public function test_empty_object()
+    public function test_empty_object_must_fail()
     {
         $data = []; // empty
         $res = $this->postJson(self::REQ_URI, $data);
@@ -25,24 +24,19 @@ class PlayerControllerCreateTest extends PlayerControllerBaseTest
         $this->assertEquals('The player skills field is required.', $json['errors']['playerSkills'][0]);
     }
 
-    public function test_PlayerRequestMustBeValidccc()
+    public function test_PlayerRequestPartialValid_must_fail()
     {
         $data = [
-            'name' => '', // empty!
-            'position' => 'invalid value!',
-            'playerSkills' => [
-                0 => [
-                    'skill' => 'invalid!',
-                    'value' => 60,
-                ],
-            ],
+            'name' => 'Valid!', // empty!
+            'position' => PlayerPosition::DEFENDER,
+            'playerSkills' => [],
         ];
 
         $res = $this->postJson(self::REQ_URI, $data);
         $res->assertStatus(422);
     }
 
-    public function test_valid_object()
+    public function test_valid_object_must_succeed()
     {
         // finally: valid request always works
         $data = [
@@ -51,12 +45,57 @@ class PlayerControllerCreateTest extends PlayerControllerBaseTest
             'playerSkills' => [
                 0 => [
                     'skill' => PlayerSkill::ATTACK,
-                    'value' => '60',
+                    'value' => '60', // number in string format
+                ],
+                1 => [
+                    'skill' => PlayerSkill::STRENGTH,
+                    'value' => 60, // number
                 ],
             ],
         ];
         $res = $this->postJson(self::REQ_URI, $data);
 
         $res->assertStatus(200);
+    }
+
+    public function test_create_player()
+    {
+        $input = '
+            {
+                "name": "player name 2",
+                "position": "midfielder",
+                "playerSkills": [
+                    {
+                        "skill": "attack",
+                        "value": 60
+                    },
+                    {
+                        "skill": "speed",
+                        "value": 80
+                    }
+                ]
+            }
+        ';
+
+        $json = json_decode($input, true);
+
+        $res = $this->postJson(self::REQ_URI, $json);
+
+        $res->assertStatus(200);
+
+        $res->assertJson(['name' => 'player name 2', 'position' => 'midfielder', 'playerSkills' => [
+            [
+                'id' => 1,
+                'skill' => 'attack',
+                'value' => 60,
+                'player_id' => 1,
+            ], [
+                'id' => 2,
+                'skill' => 'speed',
+                'value' => 80,
+                'player_id' => 1,
+            ],
+        ],
+        ]);
     }
 }

@@ -8,6 +8,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PlayerRequest;
+use App\Http\Resources\PlayerResource;
+use App\Models\Player;
+use App\Models\PlayerSkill;
+use Illuminate\Support\Facades\DB;
 
 class PlayerController extends Controller
 {
@@ -23,7 +27,41 @@ class PlayerController extends Controller
 
     public function store(PlayerRequest $request)
     {
-        return response('Failed', 200);
+        try {
+            DB::beginTransaction();
+
+            $validated = $request->validated();
+
+            $player = new Player([
+                'name' => $validated['name'],
+                'position' => $validated['position'],
+            ]);
+
+            $player->save();
+
+            $data = collect($validated['playerSkills'])->map(function ($item) use ($player) {
+                $arrayToMerge = [
+                    'player_id' => $player->id,
+                ];
+
+                return array_merge($item, $arrayToMerge);
+
+            })->toArray();
+
+            PlayerSkill::insert($data);
+
+            DB::commit();
+
+            $player = Player::find($player->id); // reload with full associated objects.
+            $playerResource = new PlayerResource($player);
+
+            return response()->json($playerResource, 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json(['message' => 'An error occurred: '.$e->getMessage()], 500);
+        }
+
     }
 
     public function update()
