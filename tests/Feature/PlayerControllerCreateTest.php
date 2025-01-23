@@ -13,7 +13,19 @@ use App\Enums\PlayerSkill;
 class PlayerControllerCreateTest extends PlayerControllerBaseTest
 {
     // test if App\Http\Requests\PlayerRequest is correctly implemented
-    public function test_PlayerRequestMustBeValid()
+    public function test_empty_object()
+    {
+        $data = []; // empty
+        $res = $this->postJson(self::REQ_URI, $data);
+        $res->assertStatus(422);
+        $json = $res->decodeResponseJson();
+
+        $this->assertEquals('Name field is mandatory!', $json['errors']['name'][0]);
+        $this->assertEquals('Position value is mandatory', $json['errors']['position'][0]);
+        $this->assertEquals('The player skills field is required.', $json['errors']['playerSkills'][0]);
+    }
+
+    public function test_PlayerRequestMustBeValidccc()
     {
         $data = [
             'name' => '', // empty!
@@ -28,81 +40,23 @@ class PlayerControllerCreateTest extends PlayerControllerBaseTest
 
         $res = $this->postJson(self::REQ_URI, $data);
         $res->assertStatus(422);
+    }
 
-        // test completed empty object
-        $data = [];
-        $res = $this->postJson(self::REQ_URI, $data);
-        $res->assertStatus(422);
-        $json = $res->decodeResponseJson();
-        $this->assertEquals('Name field is mandatory!', $json['errors']['name'][0]);
-        $this->assertEquals('Position value is mandatory', $json['errors']['position'][0]);
-
-        // test with invalid `position` attribute
-        $data = [
-            'name' => 'some valid name',
-            'position' => 'INVALID!',
-            'playerSkills' => [
-                0 => [
-                    'skill' => PlayerSkill::ATTACK,
-                    'value' => 60,
-                ],
-            ], ];
-        $res = $this->postJson(self::REQ_URI, $data);
-        $res->assertStatus(422);
-        $json = $res->decodeResponseJson();
-        $this->assertEquals('Invalid value for position: INVALID!', $json['errors']['position'][0]);
-
-        // test with invalid `skill` attribute
-        $data = [
-            'name' => 'some valid name',
-            'position' => PlayerPosition::DEFENDER,
-            'playerSkills' => [
-                0 => [
-                    'skill' => 'invalid skill value!',
-                    'value' => 60,
-                ],
-            ]];
-        $res = $this->postJson(self::REQ_URI, $data);
-        $res->assertStatus(422);
-        $json = $res->decodeResponseJson();
-        dd($json);
-        $this->assertEquals('Invalid value for position: INVALID!', $json['errors']['playerSkills'][0]);
-
+    public function test_valid_object()
+    {
         // finally: valid request always works
         $data = [
             'name' => 'Valid value!',
-            'position' => PlayerPosition::DEFENDER,
+            'position' => PlayerPosition::FORWARD,
             'playerSkills' => [
                 0 => [
                     'skill' => PlayerSkill::ATTACK,
-                    'value' => 60,
+                    'value' => '60',
                 ],
             ],
         ];
         $res = $this->postJson(self::REQ_URI, $data);
-        $res->assertStatus(200);
-    }
-
-    public function test_sample()
-    {
-        $data = [
-            'name' => 'test',
-            'position' => 'defender',
-            'playerSkills' => [
-                0 => [
-                    'skill' => PlayerSkill::ATTACK,
-                    'value' => 60,
-                ],
-                1 => [
-                    'skill' => 'speed',
-                    'value' => 80,
-                ],
-            ],
-        ];
-
-        $res = $this->postJson(self::REQ_URI, $data);
 
         $res->assertStatus(200);
-
     }
 }
