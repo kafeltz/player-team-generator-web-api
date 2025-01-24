@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TeamRequest;
 use App\Models\Player;
-use Exception;
 
 class TeamController extends Controller
 {
@@ -26,7 +25,9 @@ class TeamController extends Controller
 
         // rules
         // 1: cannot be sent a request with a position with duplicated skill
-        self::checkDuplicatedSkillAndThrows($request);
+        if (! self::checkDuplicatedSkillAndThrows($request)) {
+            return response('cannot be sent a request with a position with duplicated skill', 400);
+        }
 
         $players = Player::all();
 
@@ -48,8 +49,10 @@ class TeamController extends Controller
             }
 
             if ($map[$key] > 1) {
-                throw new Exception('It cannot accept duplicated skill with the same position');
+                return false;
             }
         }
+
+        return true;
     }
 }
