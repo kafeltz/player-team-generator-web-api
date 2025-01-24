@@ -9,21 +9,11 @@ use Illuminate\Validation\Rules\Enum;
 
 class PlayerRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
     public function authorize()
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, mixed>
-     */
     public function rules()
     {
         return [
@@ -37,7 +27,7 @@ class PlayerRequest extends FormRequest
                         $fail("Invalid value for $attribute: $value");
                     }
                 }, ],
-            'playerSkills.*.value' => 'required|numeric|gt:0',
+            'playerSkills.*.value' => 'required|integer|min:1',
         ];
     }
 

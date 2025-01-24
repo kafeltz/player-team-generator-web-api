@@ -6,6 +6,7 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,4 +34,4 @@ Route::group(['prefix' => 'player'], function () {
     Route::delete($idInThePath, [PlayerController::class, 'destroy']);
 });
 
-Route::post('team/process', []);
+Route::post('team/process', [TeamController::class, 'process']);
